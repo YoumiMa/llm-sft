@@ -214,6 +214,7 @@ def main():
     logger.debug(
         f"AutoModelForCausalLM.from_pretrained({sft_training_args.model_name_or_path}, trust_remote_code=True)"
     )
+    torch.cuda.empty_cache()
     model = AutoModelForCausalLM.from_pretrained(
         sft_training_args.model_name_or_path,
         use_cache=False,

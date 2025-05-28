@@ -5,6 +5,7 @@ import transformers
 from typing import Optional
 from dataclasses import dataclass
 from transformers.trainer_utils import set_seed
+from peft import LoraConfig, get_peft_model
 from trl import DataCollatorForCompletionOnlyLM
 from datasets import load_dataset, concatenate_datasets
 
@@ -23,10 +24,12 @@ transformers.logging.set_verbosity_info()
 
 
 def apply_chat_template(example, tokenizer):
-    # system_prompt = [{"content": "あなたは誠実で優秀な日本人のアシスタントです。", "role": "system"}]
-    # conversation = system_prompt + example["conversation"]
-    conversation = example["conversation"]
-    # stripped_conversation = [{"content": t["content"].strip().replace("\n\n", "\n"), "role": t["role"]} for t in conversation]
+    if example["conversation"][0]["role"] != "system":
+        system_prompt = [{"content": "あなたは誠実で優秀な日本人のアシスタントです。以下の新聞記事をよく読み、見出しを作成してください。", "role": "system"}]
+        conversation = system_prompt + example["conversation"]
+    else:
+        conversation = example["conversation"]
+    #stripped_conversation = [{"content": t["content"].strip().replace("\n\n", "\n"), "role": t["role"]} for t in conversation]
     example["tokenized"]= tokenizer.apply_chat_template(conversation)
     return example
 
@@ -44,10 +47,10 @@ class SFTTrainingArguments:
     load_in_4bit: bool = False
     use_flash_attention_2: bool = False
     use_peft: bool = False
-    peft_target_model: Optional[str] = "llm-jp"
+    peft_target_model: Optional[str] = "llama-all"
     peft_target_modules: Optional[list[str]] = None
-    peft_lora_r: int = 8
-    peft_lora_alpha: int = 32
+    peft_lora_r: int = 16
+    peft_lora_alpha: int = 16
     peft_lora_dropout: float = 0.05
     
     def __post_init__(self):
@@ -120,6 +123,7 @@ def main():
         trust_remote_code=True,
     )
 
+    tokenizer.pad_token = "<|finetune_right_pad_id|>"
     print(tokenizer.special_tokens_map, "ids:", tokenizer.all_special_ids)
     logger.info("Loading data")
     
@@ -146,8 +150,8 @@ def main():
     
     logger.info("Formatting prompts")
 
-    instruction_ids = tokenizer.encode("<start_of_turn>user\n")[1:] # no begin of text
-    response_ids = tokenizer.encode("<start_of_turn>model\n")[1:] # no begin of text
+    instruction_ids = tokenizer.encode("<|start_header_id|>user<|end_header_id|>\n\n")[1:] # no begin of text
+    response_ids = tokenizer.encode("<|start_header_id|>assistant<|end_header_id|>\n\n")[1:] # no begin of text
     
     collator = DataCollatorForCompletionOnlyLM(
         instruction_template=instruction_ids,
@@ -160,9 +164,10 @@ def main():
     # input_ids = batch["input_ids"][0]
     # labels = batch["labels"][0]
     # print("入力トークンID:", input_ids)
+    # print(len(input_ids))
     # print("正解ラベル:", labels)
-    # 
-    # 
+    
+    
     # segments_to_fit: list[list[int]] = []
     # segments_to_ignore: list[list[int]] = []
     # # ラベルが-100である箇所とそうでない箇所ごとにグルーピング
@@ -174,12 +179,12 @@ def main():
     #         segments_to_ignore.append(group)
     #     else:
     #         segments_to_fit.append(group)
-    # 
+    
     # print("---- 損失を計算しない部分 ----")
     # for seg in segments_to_ignore:
     #     print(tokenizer.decode(input_ids[seg]))
     #     print()
-    # 
+    
     # print("---- 損失を計算する部分 ----")
     # for seg in segments_to_fit:
     #     print(tokenizer.decode(input_ids[seg]))
@@ -191,14 +196,38 @@ def main():
     logger.debug(
         f"AutoModelForCausalLM.from_pretrained({sft_training_args.model_name_or_path}, trust_remote_code=True)"
     )
-    torch.cuda.empty_cache()
+    
     model = AutoModelForCausalLM.from_pretrained(
         sft_training_args.model_name_or_path,
         use_cache=False,
         trust_remote_code=True,
     )
     
+    # model.config.eos_token_id = [128001, 128008, 128009]
 
+    peft_config: Optional[LoraConfig] = None
+    if sft_training_args.use_peft:
+        logger.info("Setting ip LoRA")
+        peft_config = LoraConfig(
+            r=sft_training_args.peft_lora_r,
+            target_modules=sft_training_args.peft_target_modules,
+            lora_alpha=sft_training_args.peft_lora_alpha,
+            lora_dropout=sft_training_args.peft_lora_dropout,
+            fan_in_fan_out=True,
+            bias="none",
+            task_type="CAUSAL_LM",
+        )
+        if training_args.gradient_checkpointing:
+            for param in model.parameters():
+                param.requires_grad = False
+                if param.ndim == 1:
+                    param.data = param.data.to(torch.float32)
+            model.gradient_checkpointing_enable()
+            model.enable_input_require_grads()
+        
+        model = get_peft_model(model, peft_config)
+        model.print_trainable_parameters()
+    
     logger.info("Setting up trainer")
     trainer = Trainer(
     model,
@@ -209,11 +238,10 @@ def main():
 )
 
     logger.info("Training")
-    print(training_args.resume_from_checkpoint)
     trainer.train(resume_from_checkpoint = training_args.resume_from_checkpoint)
-    #trainer.train(resume_from_checkpoint = True)
     
-    model.generation_config.eos_token_id = [1, 107]
+    model.config.eos_token_id = [128001, 128008, 128009]
+    model.generation_config.eos_token_id = [128001, 128008, 128009]
     
     logger.info("Saving model")
     trainer.save_model()

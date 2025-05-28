@@ -159,10 +159,10 @@ def main():
         tokenizer=tokenizer,
     )
 
-    # # for debugging purpose
-    # batch = collator(tokenized_dataset[:1000])
-    # input_ids = batch["input_ids"][10]
-    # labels = batch["labels"][10]
+    # for debugging purpose
+    # batch = collator(tokenized_dataset)
+    # input_ids = batch["input_ids"][1]
+    # labels = batch["labels"][1]
     # print("入力トークンID:", input_ids)
     # print("入力トークン:", tokenizer.decode(input_ids))
     # print("正解ラベル:", labels)
@@ -182,12 +182,14 @@ def main():
     
     # print("---- 損失を計算しない部分 ----")
     # for seg in segments_to_ignore:
+    #     print("==========")
     #     print(tokenizer.decode(input_ids[seg]))
     #     print()
     
     # print("---- 損失を計算する部分 ----")
     # for seg in segments_to_fit:
-    #     print(tokenizer.convert_ids_to_tokens(input_ids[seg]))
+    #     print("==========")
+    #     print(tokenizer.decode(input_ids[seg]))
     #     print(input_ids[seg])
     #     print()
     # ------------debugging------------
