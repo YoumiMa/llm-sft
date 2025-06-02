@@ -5,7 +5,7 @@ import transformers
 from typing import Optional
 from dataclasses import dataclass
 from transformers.trainer_utils import set_seed
-from trl import DataCollatorForCompletionOnlyLM
+# from trl import DataCollatorForCompletionOnlyLM
 from datasets import load_dataset, concatenate_datasets
 
 from transformers import (

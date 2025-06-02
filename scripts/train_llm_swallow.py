@@ -5,8 +5,9 @@ import transformers
 from typing import Optional
 from dataclasses import dataclass
 from transformers.trainer_utils import set_seed
-from trl import DataCollatorForCompletionOnlyLM
+# from trl import DataCollatorForCompletionOnlyLM
 from datasets import load_dataset, concatenate_datasets
+from data_collator import DataCollatorForLastTurnOnlyLM
 
 from transformers import (
     Trainer,
@@ -152,13 +153,14 @@ def main():
     instruction_ids = tokenizer.encode("<|start_header_id|>user<|end_header_id|>\n\n")[1:] # no begin of text
     response_ids = tokenizer.encode("<|start_header_id|>assistant<|end_header_id|>\n\n")[1:] # no begin of text
     
-    collator = DataCollatorForCompletionOnlyLM(
+    collator = DataCollatorForLastTurnOnlyLM(
+        last_turn_only=True,
         instruction_template=instruction_ids,
         response_template=response_ids,
         tokenizer=tokenizer,
     )
 
-    # for debugging purpose
+    # #for debugging purpose
     # batch = collator(tokenized_dataset[:1])
     # input_ids = batch["input_ids"][0]
     # labels = batch["labels"][0]
@@ -187,7 +189,7 @@ def main():
     # for seg in segments_to_fit:
     #     print(tokenizer.decode(input_ids[seg]))
     #     print()
-    # ------------debugging------------
+    # # ------------debugging------------
 
     logger.info(f"Loading model from {sft_training_args.model_name_or_path}")
     
