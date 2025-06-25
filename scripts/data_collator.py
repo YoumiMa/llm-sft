@@ -107,7 +107,8 @@ class DataCollatorForLastTurnOnlyLM(DataCollatorForLanguageModeling):
                 if self.last_turn_only:
                     human_token_ids_idxs = [human_token_ids_idxs[-1]]
                     response_token_ids_idxs = [response_token_ids_idxs[-1]]
-
+                    assert len(human_token_ids_idxs) == 1
+                    assert len(response_token_ids_idxs) == 1
                 for idx, (start, end) in enumerate(zip(human_token_ids_idxs, response_token_ids_idxs)):
                     # Make pytorch loss function ignore all non response tokens
                     if idx != 0:
