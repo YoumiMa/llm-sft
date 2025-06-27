@@ -3,6 +3,8 @@ from transformers import AutoModelForCausalLM, AutoTokenizer
 from datasets import load_dataset, concatenate_datasets
 import argparse
 import torch
+import os
+import random
 
 # 乱数シードを42に固定
 set_seed(42)
@@ -46,10 +48,12 @@ def main():
         args.model_name_or_path,
         use_cache=False,
         trust_remote_code=True,
+        torch_dtype="bfloat16"
     ).to('cuda' if torch.cuda.is_available() else 'cpu')
-    
-    print([dataset[1]["conversation"][0]])
-    messages = [dataset[1]["conversation"][0]]
+
+    idx = 88108
+    print([dataset[idx]["conversation"][0]])
+    messages = [dataset[idx]["conversation"][0]]
     tokenized_chat = tokenizer.apply_chat_template(
         messages,
         tokenize=True,
@@ -63,6 +67,17 @@ def main():
     print("====")
     print(len(generated_tokens[0]),generated_tokens[0])
     
+    model_name = os.path.split(args.model_name_or_path)[-1]
+    print(model_name)
+    
+    model.generation_config.temperature= 0.6
+    model.generation_config.top_p = 0.9
+    model.generation_config.do_sample = True
+
+    repo_name = f"tokyotech-llm/{model_name}"
+    tokenizer.push_to_hub(repo_name, private=True)
+    model.push_to_hub(repo_name, private=True)
+
     return
 
 

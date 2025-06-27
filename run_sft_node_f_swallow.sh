@@ -46,5 +46,3 @@ accelerate launch --config_file configs/my_accelerate_config_zero1.yaml scripts/
 --logging_steps 10 \
 --save_steps 500 \
 --seed ${SEED} \
-
-

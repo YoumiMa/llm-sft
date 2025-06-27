@@ -5,8 +5,9 @@ import transformers
 from typing import Optional
 from dataclasses import dataclass
 from transformers.trainer_utils import set_seed
-from trl import DataCollatorForCompletionOnlyLM
+# from trl import DataCollatorForCompletionOnlyLM
 from datasets import load_dataset, concatenate_datasets
+from data_collator import DataCollatorForLastTurnOnlyLM
 
 from transformers import (
     Trainer,
@@ -148,90 +149,91 @@ def main():
     instruction_ids = tokenizer.encode("<|start_header_id|>user<|end_header_id|>\n\n")[1:] # no begin of text
     response_ids = tokenizer.encode("<|start_header_id|>assistant<|end_header_id|>\n\n")[1:] # no begin of text
     
-    collator = DataCollatorForCompletionOnlyLM(
+    collator = DataCollatorForLastTurnOnlyLM(
+        last_turn_only=True,
         instruction_template=instruction_ids,
         response_template=response_ids,
         tokenizer=tokenizer,
     )
 
     # # for debugging purpose
-    batch = collator(tokenized_dataset[:1])
-    input_ids = batch["input_ids"][0]
-    labels = batch["labels"][0]
-    print("入力トークンID:", input_ids)
-    print("正解ラベル:", labels)
+    # batch = collator(tokenized_dataset[:1])
+    # input_ids = batch["input_ids"][0]
+    # labels = batch["labels"][0]
+    # print("入力トークンID:", input_ids)
+    # print("正解ラベル:", labels)
     
     
-    segments_to_fit: list[list[int]] = []
-    segments_to_ignore: list[list[int]] = []
-    # ラベルが-100である箇所とそうでない箇所ごとにグルーピング
-    for key, group in itertools.groupby(
-        range(len(input_ids)), key=lambda i: labels[i] == -100
-    ):
-        group = list(group)
-        if key:
-            segments_to_ignore.append(group)
-        else:
-            segments_to_fit.append(group)
+    # segments_to_fit: list[list[int]] = []
+    # segments_to_ignore: list[list[int]] = []
+    # # ラベルが-100である箇所とそうでない箇所ごとにグルーピング
+    # for key, group in itertools.groupby(
+    #     range(len(input_ids)), key=lambda i: labels[i] == -100
+    # ):
+    #     group = list(group)
+    #     if key:
+    #         segments_to_ignore.append(group)
+    #     else:
+    #         segments_to_fit.append(group)
     
-    print("---- 損失を計算しない部分 ----")
-    for seg in segments_to_ignore:
-        print(tokenizer.decode(input_ids[seg]))
-        print()
+    # print("---- 損失を計算しない部分 ----")
+    # for seg in segments_to_ignore:
+    #     print(tokenizer.decode(input_ids[seg]))
+    #     print()
     
-    print("---- 損失を計算する部分 ----")
-    for seg in segments_to_fit:
-        print(tokenizer.decode(input_ids[seg]))
-        print()
+    # print("---- 損失を計算する部分 ----")
+    # for seg in segments_to_fit:
+    #     print(tokenizer.decode(input_ids[seg]))
+    #     print()
     # ------------debugging------------
 
-#     logger.info(f"Loading model from {sft_training_args.model_name_or_path}")
+    logger.info(f"Loading model from {sft_training_args.model_name_or_path}")
     
-#     logger.debug(
-#         f"AutoModelForCausalLM.from_pretrained({sft_training_args.model_name_or_path}, trust_remote_code=True)"
-#     )
-#     model = AutoModelForCausalLM.from_pretrained(
-#         sft_training_args.model_name_or_path,
-#         use_cache=False,
-#         trust_remote_code=True,
-#     )
+    logger.debug(
+        f"AutoModelForCausalLM.from_pretrained({sft_training_args.model_name_or_path}, trust_remote_code=True)"
+    )
+    model = AutoModelForCausalLM.from_pretrained(
+        sft_training_args.model_name_or_path,
+        use_cache=False,
+        trust_remote_code=True,
+    )
     
-#     model.config.eos_token_id = [128001, 128008, 128009]
+    model.config.eos_token_id = [128001, 128008, 128009]
 
-#     logger.info("Setting up trainer")
-#     trainer = Trainer(
-#     model,
-#     train_dataset=tokenized_dataset,  # トークンID化されたデータセット
-#     data_collator=collator,  # ラベルの加工及びミニバッチ構築処理を行うモジュール
-#     args=training_args,  # 訓練の設定
-#     tokenizer=tokenizer,  # パラメータ保存時にトークナイザも一緒に保存するために指定
-# )
+    logger.info("Setting up trainer")
+    trainer = Trainer(
+    model,
+    train_dataset=tokenized_dataset,  # トークンID化されたデータセット
+    data_collator=collator,  # ラベルの加工及びミニバッチ構築処理を行うモジュール
+    args=training_args,  # 訓練の設定
+    tokenizer=tokenizer,  # パラメータ保存時にトークナイザも一緒に保存するために指定
+)
 
-#     logger.info("Training")
-#     trainer.train(resume_from_checkpoint = training_args.resume_from_checkpoint)
+    logger.info("Training")
+    trainer.train(resume_from_checkpoint = training_args.resume_from_checkpoint)
     
-#     #model.config.eos_token_id = [128001, 128008, 128009]
-#     model.generation_config.eos_token_id = [128001, 128008, 128009]
+    #model.config.eos_token_id = [128001, 128008, 128009]
+    model.generation_config.eos_token_id = [128001, 128008, 128009]
     
-#     logger.info("Saving model")
-#     trainer.save_model()
+    logger.info("Saving model")
+    trainer.save_model()
     
-#     logger.info("Test run")
+    logger.info("Test run")
     
-#     messages = [dataset[1]["conversation"][0]]
-#     tokenized_chat = tokenizer.apply_chat_template(
-#         messages,
-#         tokenize=True,
-#         add_generation_prompt=True,
-#         return_tensors="pt"
-#     ).to('cuda' if torch.cuda.is_available() else 'cpu')
+    messages = [dataset[1]["conversation"][0]]
+    tokenized_chat = tokenizer.apply_chat_template(
+        messages,
+        tokenize=True,
+        add_generation_prompt=True,
+        return_tensors="pt"
+    ).to('cuda' if torch.cuda.is_available() else 'cpu')
 
 
-#     generated_tokens = model.generate(tokenized_chat, max_new_tokens=2048)
-#     generated_text = tokenizer.decode(generated_tokens[0])
-#     print(generated_text)
-#     print("====")
-#     print(len(generated_tokens[0]),generated_tokens[0])
+    generated_tokens = model.generate(tokenized_chat, max_new_tokens=2048)
+    generated_text = tokenizer.decode(generated_tokens[0])
+    print(generated_text)
+    print("====")
+    print(len(generated_tokens[0]),generated_tokens[0])
     
     return
 
