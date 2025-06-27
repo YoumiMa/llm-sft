@@ -4,7 +4,7 @@
 #
 #    pip-compile
 #
-accelerate==0.25.0
+accelerate==1.0.1
     # via
     #   -r requirements.in
     #   peft
@@ -35,7 +35,7 @@ click==8.1.7
     # via wandb
 datasets==2.15.0
     # via trl
-deepspeed==0.12.5
+deepspeed==0.15.2
     # via -r requirements.in
 dill==0.3.7
     # via
@@ -237,7 +237,7 @@ tqdm==4.66.1
     #   huggingface-hub
     #   peft
     #   transformers
-transformers==4.36.2
+transformers==4.46.2
     # via
     #   -r requirements.in
     #   peft
