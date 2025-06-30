@@ -70,3 +70,8 @@ where an example of `${DISTRIBUTED_TRAINING_SCRIPT}` is [tsubame/run_sft_node_f_
 ### ABCI 3.0
 Bash scripts for submitting batch jobs for SFT on ABCI 3.0 are stored in `abci/`.
 The hyperparameters are hard-coded in the bash script. Simply run `qsub abci/run_sft_node_f.sh` after modifying the arguments when necessary.
+
+### Training models other than Llama-3.1-8B
+When adding support for a new model, it is necessary to prepare a seperated `.py` training script. We are doing so because different model has different configurations regarding the chat template and stop/padding tokens.
+
+Currently we support Llama-3.1, Llama-3.1-Swallow, Llama-3-Youko, LLM-jp, Gemma-2, Qwen-2.5, and OLMo-2. See the scripts in [scripts/](scripts/).
