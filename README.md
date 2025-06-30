@@ -9,16 +9,22 @@ This repository contains the code for supervised fine-tuning of LLM-jp models.
 - [transformers](https://huggingface.co/docs/transformers/index)>=4.34.0
 - [tokenizers](https://huggingface.co/docs/tokenizers/index)>=0.14.0
 - [accelerate](https://huggingface.co/docs/accelerate/index)>=0.23.0
-- [trl](https://huggingface.co/docs/trl/index)>=0.7.2
 - [peft](https://huggingface.co/docs/peft/index)>=0.5.0
 
 ## Installation
 
 Install the necessary packages using `pip`:
 
+### TSUBAME 4.0
 ```bash
-pip install -r requirements.txt
+pip install -r requirements_tsubame.txt
 ```
+
+### ABCI 3.0
+```bash
+pip install -r requirements_abci.txt
+```
+### Flash Attention (Optional)
 
 To turn on `use_flash_attention_2` option:
 ```bash
@@ -30,212 +36,37 @@ pip install flash-attn --no-build-isolation
 A sample dataset is provided in `data/`. A training example is structured as follows:
 
 ```json
-{"text": "以下は、タスクを説明する指示です。要求を適切に満たす応答を書きなさい。\n\n### 指示:\n日本で一番高い山は？\n\n### 応答:\n富士山"}
+{
+  "conversation_id": "33f01939a744455c869cb234afca47f1",
+  "conversation": [
+    {
+      "content": "個人情報保護サービスは、個人情報の盗難からどのように私を守ることができるのでしょうか？",
+      "role": "user"
+    },
+    {
+      "role": "assistant",
+      "content": "個人情報保護サービスは、個人情報の盗難からあなたを守るために、以下のような機能を提供しています。\n\n1.  **個人情報の監視**：あなたの個人情報がインターネット上で共有されているかどうかを監視し、不正な利用を検知します。\n2.  **不正アクセスの防止**：あなたの個人情報に不正アクセスする試みを阻止します。\n3.  **個人情報の暗号化**：あなたの個人情報を暗号化して、第三者がアクセスできないようにします。\n4.  **警告と通知**：不正なアクセスや個人情報の漏洩が検知された場合、即座にあなたに通知します。\n5.  **個人情報の削除**：インターネット上からあなたの個人情報を削除する手助けをします。\n6.  **セキュリティソフトウェアの提供**：マルウェアやウイルスからあなたのデバイスを保護するセキュリティソフトウェアを提供します。\n7.  **個人情報の管理**：あなたの個人情報を安全に管理し、必要な場合には更新や削除を行います。\n8.  **サポートとアドバイス**：個人情報の保護に関するサポートとアドバイスを提供します。\n\nこれらの機能により、個人情報保護サービスはあなたの個人情報を保護し、盗難や漏洩から守ることができます。"
+    }
+  ]
+}
 ```
 
-During training, loss calculation is focused on tokens post the "### 応答:" segment. For the above example, the loss will be based on "富士山".
+During training, loss calculation is focused on tokens in `d["content"]` where `d["role"]=="assistant"`. 
 
 ## Training
-
-Here is the command to train a model on the sample dataset.
-
-```bash
-python train.py \
-    --num_train_epochs 1 \
-    --per_device_train_batch_size 1 \
-    --learning_rate 1e-5 \
-    --warmup_ratio 0.1 \
-    --lr_scheduler_type cosine \
-    --data_files data/example.jsonl \
-    --model_name_or_path llm-jp/llm-jp-1.3b-v1.0 \
-    --output_dir results/
+### TSUBAME 4.0
+Bash scripts for submitting batch jobs for SFT on TSUBAME 4.0 are stored in `tsubame/`.
+When submitting the batch job for a single node, the example usage is to run below:
 ```
-
-## To Reproduce LLM-jp Models
-
-### Datasets
-
-We used the following datasets for fine-tuning.
-
-- Jaster: A collection of automatically transformed data from the existing Japanese NLP datasets.
-- Dolly: A Japanese translation of [Dolly](https://huggingface.co/datasets/databricks/databricks-dolly-15k).
-- OpenAssistant: A Japanese translation of [OpenAssistant Conversations Dataset](https://huggingface.co/datasets/OpenAssistant/oasst1).
-
-**NOTE**: The datasets mentioned above are not public as of now. We're in the process of making them accessible. Stay tuned for updates.
-
-### Full Parameter Supervised Fine-tuning
-
-#### For the 1.3B model (single node; 8 A100 40GB GPUs)
-
-```bash
-accelerate launch --config_file configs/accelerate_config_zero1.yaml \
-    train.py \
-    --num_train_epochs 2 \
-    --per_device_train_batch_size 8 \
-    --gradient_accumulation_steps 8 \
-    --learning_rate 1e-5 \
-    --warmup_ratio 0.1 \
-    --lr_scheduler_type cosine \
-    --bf16 \
-    --max_seq_length 2048 \
-    --logging_steps 1 \
-    --data_files jamp.json janli.json jcommonsenseqa.json jemhopqa.json jnli.json jsem.json jsick.json jsquad.json jsts.json niilc.json dolly_deepl.json oasst_deepl.json \
-    --model_name_or_path llm-jp/llm-jp-1.3b-v1.0 \
-    --output_dir results/llm-jp-1.3b-instruct-full-jaster-dolly-oasst-v1.0
+qsub -g ${GROUP_ID} tsubame/run_sft_node_f.sh ${WANDB_JOB_NAME} ${SEED} ${TRAINING_DATA_PATH_1} ${TRAINING_DATA_PATH_2} ...
 ```
-
-#### For the 13B model (single node; 8 A100 40GB GPUs)
-
-```bash
-accelerate launch --config_file configs/accelerate_config_zero3.yaml \
-    train.py \
-    --num_train_epochs 2 \
-    --per_device_train_batch_size 1 \
-    --gradient_accumulation_steps 32 \
-    --learning_rate 1e-5 \
-    --warmup_ratio 0.1 \
-    --lr_scheduler_type cosine \
-    --bf16 \
-    --max_seq_length 2048 \
-    --gradient_checkpointing \
-    --logging_steps 1 \
-    --data_files jamp.json janli.json jcommonsenseqa.json jemhopqa.json jnli.json jsem.json jsick.json jsquad.json jsts.json niilc.json dolly_deepl.json oasst_deepl.json \
-    --model_name_or_path llm-jp/llm-jp-13b-v1.0 \
-    --output_dir results/llm-jp-13b-instruct-full-jaster-dolly-oasst-v1.0
+When submitting the batch job for multiple nodes, the example usage is to run below:
 ```
-
-#### For the 13B model (8 nodes; 64 A100 40GB GPUs)
-
-Run following lines from all the nodes.
-(`$machine_rank` is the sequential number from 0 to 7 assigned to each node, and `$main_process_ip` is the IP address of the node `$machine_rank=0`)
-
-```bash
-accelerate launch --config_file configs/accelerate_config_zero2.8node.yaml \
-    --main_process_ip $main_process_ip \
-    --main_process_port 29500 \
-    --machine_rank $machine_rank \
-    train.py \
-    --num_train_epochs 2 \
-    --per_device_train_batch_size 3 \
-    --gradient_accumulation_steps 6 \
-    --learning_rate 1e-5 \
-    --warmup_ratio 0.1 \
-    --lr_scheduler_type cosine \
-    --bf16 \
-    --max_seq_length 2048 \
-    --logging_steps 1 \
-    --data_files jamp.json janli.json jcommonsenseqa.json jemhopqa.json jnli.json jsem.json jsick.json jsquad.json jsts.json niilc.json dolly_deepl.json oasst_deepl.json \
-    --model_name_or_path llm-jp/llm-jp-13b-v1.0 \
-    --output_dir results/llm-jp-13b-instruct-full-jaster-dolly-oasst-v1.0
+qsub -g ${GROUP_ID} tsubame/run_multinodes.sh ${DISTRIBUTED_TRAINING_SCRIPT} ${WANDB_JOB_NAME} ${SEED} ${TRAINING_DATA_PATH_1} ${TRAINING_DATA_PATH_2} ...
 ```
+where an example of `${DISTRIBUTED_TRAINING_SCRIPT}` is [tsubame/run_sft_node_f_llama3.per_node.sh](tsubame/run_sft_node_f_llama3.per_node.sh).
+- make sure to `chmod 777 ${DISTRIBUTED_TRAINING_SCRIPT}`, otherwise the script could not be executed by mpirun.
 
-### Fine-tuning with PEFT
-
-#### For the 1.3B model (single node; single A100 40GB GPU)
-
-```bash
-CUDA_VISIBLE_DEVICES=0 python train.py \
-    --num_train_epochs 5 \
-    --per_device_train_batch_size 8 \
-    --gradient_accumulation_steps 4 \
-    --learning_rate 1e-4 \
-    --warmup_ratio 0.1 \
-    --lr_scheduler_type cosine \
-    --bf16 \
-    --max_seq_length 2048 \
-    --data_files jamp.json janli.json jcommonsenseqa.json jemhopqa.json jnli.json jsem.json jsick.json jsquad.json jsts.json niilc.json dolly_deepl.json oasst_deepl.json \
-    --use_peft \
-    --model_name_or_path llm-jp/llm-jp-1.3b-v1.0 \
-    --output_dir results/llm-jp-1.3b-instruct-lora-jaster-dolly-oasst-v1.0
-```
-
-#### For the 13B model (single node; single A100 40GB GPU)
-
-```bash
-CUDA_VISIBLE_DEVICES=0 python train.py \
-    --num_train_epochs 5 \
-    --per_device_train_batch_size 1 \
-    --gradient_accumulation_steps 32 \
-    --learning_rate 1e-4 \
-    --warmup_ratio 0.1 \
-    --lr_scheduler_type cosine \
-    --bf16 \
-    --max_seq_length 2048 \
-    --gradient_checkpointing \
-    --data_files jamp.json janli.json jcommonsenseqa.json jemhopqa.json jnli.json jsem.json jsick.json jsquad.json jsts.json niilc.json dolly_deepl.json oasst_deepl.json \
-    --use_peft \
-    --model_name_or_path llm-jp/llm-jp-13b-v1.0 \
-    --output_dir results/llm-jp-13b-instruct-lora-jaster-dolly-oasst-v1.0
-```
-
-#### For the 1.3B model (single node; 8 A100 40GB GPUs)
-
-```bash
-accelerate launch --config_file configs/accelerate_config_zero1.yaml \
-    train.py \
-    --num_train_epochs 5 \
-    --per_device_train_batch_size 8 \
-    --gradient_accumulation_steps 8 \
-    --learning_rate 1e-4 \
-    --warmup_ratio 0.1 \
-    --lr_scheduler_type cosine \
-    --bf16 \
-    --max_seq_length 2048 \
-    --data_files jamp.json janli.json jcommonsenseqa.json jemhopqa.json jnli.json jsem.json jsick.json jsquad.json jsts.json niilc.json dolly_deepl.json oasst_deepl.json \
-    --use_peft \
-    --model_name_or_path llm-jp/llm-jp-1.3b-v1.0 \
-    --output_dir results/llm-jp-1.3b-instruct-lora-jaster-dolly-oasst-v1.0
-```
-
-#### For the 13B model (single node; 8 A100 40GB GPUs)
-
-```bash
-accelerate launch --config_file configs/accelerate_config_zero1.yaml \
-    train.py \
-    --num_train_epochs 5 \
-    --per_device_train_batch_size 1 \
-    --gradient_accumulation_steps 16 \
-    --learning_rate 1e-4 \
-    --warmup_ratio 0.1 \
-    --lr_scheduler_type cosine \
-    --bf16 \
-    --max_seq_length 2048 \
-    --data_files jamp.json janli.json jcommonsenseqa.json jemhopqa.json jnli.json jsem.json jsick.json jsquad.json jsts.json niilc.json dolly_deepl.json oasst_deepl.json \
-    --use_peft \
-    --model_name_or_path llm-jp/llm-jp-13b-v1.0 \
-    --output_dir results/llm-jp-13b-instruct-lora-jaster-dolly-oasst-v1.0
-```
-
-### Using flash-attn
-
-The `use_flash_attention_2` option in transformers v4.36 only supports for the models based on Llama and Falcon.
-
-#### For the 7B model (single node; single A100 40GB GPU)
-
-```bash
-CUDA_VISIBLE_DEVICES=0 python train.py \
-    --num_train_epochs 5 \
-    --per_device_train_batch_size 4 \
-    --gradient_accumulation_steps 16 \
-    --learning_rate 1e-4 \
-    --warmup_ratio 0.1 \
-    --lr_scheduler_type cosine \
-    --bf16 \
-    --max_seq_length 2048 \
-    --gradient_checkpointing \
-    --data_files jamp.json janli.json jcommonsenseqa.json jemhopqa.json jnli.json jsem.json jsick.json jsquad.json jsts.json niilc.json dolly_deepl.json oasst_deepl.json \
-    --use_flash_attention_2 True \
-    --use_peft \
-    --model_name_or_path llm-jp/llm-jp-7b \
-    --output_dir results/llm-jp-7b-instruct-lora-jaster-dolly-oasst-v1.0
-```
-
-
-### GPTQ Converter
-
-```bash
-python converter/gptq_converter.py \
-    --model_name_or_path llm-jp/llm-jp-13b-v1.0 \
-    --dataset ptb \
-    --output_dir results/llm-jp-13b-v1.0-gptq
-```
+### ABCI 3.0
+Bash scripts for submitting batch jobs for SFT on ABCI 3.0 are stored in `abci/`.
+The hyperparameters are hard-coded in the bash script. Simply run `qsub abci/run_sft_node_f.sh` after modifying the arguments when necessary.
