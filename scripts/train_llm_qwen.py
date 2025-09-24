@@ -23,11 +23,12 @@ transformers.logging.set_verbosity_info()
 
 
 def apply_chat_template(example, tokenizer):
-    if example["conversation"][0]["role"] != "system":
-        system_prompt = [{"content": "You are Qwen, created by Alibaba Cloud. You are a helpful assistant.", "role": "system"}]
-        conversation = system_prompt + example["conversation"]
-    else:
-        conversation = example["conversation"]
+    # if example["conversation"][0]["role"] != "system":
+    #     system_prompt = [{"content": "You are Qwen, created by Alibaba Cloud. You are a helpful assistant.", "role": "system"}]
+    #     conversation = system_prompt + example["conversation"]
+    # else:
+    #     conversation = example["conversation"]
+    conversation = example["conversation"]
     stripped_conversation = [{"content": t["content"].strip(), "role": t["role"]} for t in conversation]
     example["tokenized"]= tokenizer.apply_chat_template(stripped_conversation)
     return example
@@ -220,7 +221,7 @@ def main():
     trainer.train(resume_from_checkpoint = training_args.resume_from_checkpoint)
     
     model.config.eos_token_id = 151645
-    model.generation_config.eos_token_id = [151645, 151643]
+    model.generation_config.eos_token_id = 151645
     model.generation_config.pad_token_id = 151643
     model.generation_config.do_sample = True
     model.generation_config.repetition_penalty = 1.05
