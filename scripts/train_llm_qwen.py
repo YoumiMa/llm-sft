@@ -29,8 +29,9 @@ def apply_chat_template(example, tokenizer):
     # else:
     #     conversation = example["conversation"]
     conversation = example["conversation"]
-    stripped_conversation = [{"content": t["content"].strip(), "role": t["role"]} for t in conversation]
-    example["tokenized"]= tokenizer.apply_chat_template(stripped_conversation)
+    # stripped_conversation = [{"content": t["content"].strip(), "role": t["role"]} for t in conversation]
+    example["tokenized"]= tokenizer.apply_chat_template(conversation)
+
     return example
 
 @dataclass

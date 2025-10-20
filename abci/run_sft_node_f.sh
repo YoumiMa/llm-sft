@@ -1,13 +1,14 @@
 #! /bin/sh
-#PBS -P gcb50243 
+#PBS -P gag51395  
 #PBS -q rt_HF
 #PBS -l select=1  -k oe
 #PBS -l walltime=07:00:00
 
-module load cuda/12.1/12.1.1
+module load cuda/12.8/12.8.1
 
 source miniconda3/bin/activate
 conda activate llm-jp-sft
+
 
 LR=2.5e-5
 MINLR=2.5e-6
