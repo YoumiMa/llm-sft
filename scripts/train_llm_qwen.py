@@ -5,8 +5,9 @@ import transformers
 from typing import Optional
 from dataclasses import dataclass
 from transformers.trainer_utils import set_seed
-from trl import DataCollatorForCompletionOnlyLM
+# from trl import DataCollatorForCompletionOnlyLM
 from datasets import load_dataset, concatenate_datasets
+from data_collator import DataCollatorForLastTurnOnlyLM
 
 from transformers import (
     Trainer,
@@ -150,18 +151,19 @@ def main():
     
     logger.info("Formatting prompts")
 
-    instruction_ids = tokenizer.encode("<|im_start|>user\n") # qwen doesn't have begin of text
-    response_ids = tokenizer.encode("<|im_start|>assistant\n") # qwen doesn't have begin of text
+    instruction_ids = tokenizer.encode("<|im_start|>user") # qwen doesn't have begin of text
+    response_ids = tokenizer.encode("<|im_start|>assistant") # qwen doesn't have begin of text
 
     print("instruction:", instruction_ids)
     print("response:", response_ids)
-    collator = DataCollatorForCompletionOnlyLM(
+
+    collator = DataCollatorForLastTurnOnlyLM(
         instruction_template=instruction_ids,
         response_template=response_ids,
         tokenizer=tokenizer,
     )
 
-    # for debugging purpose
+    # # for debugging purpose
     # batch = collator(tokenized_dataset)
     # input_ids = batch["input_ids"][1]
     # labels = batch["labels"][1]
@@ -174,8 +176,8 @@ def main():
     # segments_to_ignore: list[list[int]] = []
     # # ラベルが-100である箇所とそうでない箇所ごとにグルーピング
     # for key, group in itertools.groupby(
-    #     range(len(input_ids)), key=lambda i: labels[i] == -100
-    # ):
+    #         range(len(input_ids)), key=lambda i: labels[i] == -100
+    #  ):
     #     group = list(group)
     #     if key:
     #         segments_to_ignore.append(group)
@@ -194,30 +196,32 @@ def main():
     #     print(tokenizer.decode(input_ids[seg]))
     #     print(input_ids[seg])
     #     print()
-    # ------------debugging------------
-
+    # # ------------debugging------------
+    # 
+    # 
     logger.info(f"Loading model from {sft_training_args.model_name_or_path}")
     
     logger.debug(
         f"AutoModelForCausalLM.from_pretrained({sft_training_args.model_name_or_path}, trust_remote_code=True)"
     )
+    
     model = AutoModelForCausalLM.from_pretrained(
         sft_training_args.model_name_or_path,
         use_cache=False,
         trust_remote_code=True,
     )
-
+    
     model.config.eos_token_id = 151645
-
+    
     logger.info("Setting up trainer")
     trainer = Trainer(
-    model,
-    train_dataset=tokenized_dataset,  # トークンID化されたデータセット
-    data_collator=collator,  # ラベルの加工及びミニバッチ構築処理を行うモジュール
-    args=training_args,  # 訓練の設定
-    tokenizer=tokenizer,  # パラメータ保存時にトークナイザも一緒に保存するために指定
-)
-
+        model,
+        train_dataset=tokenized_dataset,  # トークンID化されたデータセット
+        data_collator=collator,  # ラベルの加工及びミニバッチ構築処理を行うモジュール
+        args=training_args,  # 訓練の設定
+        tokenizer=tokenizer,  # パラメータ保存時にトークナイザも一緒に保存するために指定
+    )
+    
     logger.info("Training")
     trainer.train(resume_from_checkpoint = training_args.resume_from_checkpoint)
     
@@ -235,6 +239,7 @@ def main():
     
     logger.info("Test run")
     
+    
     messages = [dataset[1]["conversation"][0]]
     tokenized_chat = tokenizer.apply_chat_template(
         messages,
@@ -242,14 +247,15 @@ def main():
         add_generation_prompt=True,
         return_tensors="pt"
     ).to('cuda' if torch.cuda.is_available() else 'cpu')
-
-
+    
+    
+    
     generated_tokens = model.generate(tokenized_chat, max_new_tokens=2048)
     generated_text = tokenizer.decode(generated_tokens[0])
     print(generated_text)
     print("====")
     print(len(generated_tokens[0]),generated_tokens[0])
-    
+   
     return
 
 
