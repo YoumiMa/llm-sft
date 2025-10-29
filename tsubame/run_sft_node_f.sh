@@ -1,7 +1,7 @@
 #! /bin/sh
 #$ -cwd
 #$ -l node_f=1
-#$ -l h_rt=20:00:00
+#$ -l h_rt=10:00:00
 
 HUGGINGFACE_CACHE=/gs/bs/tga-okazaki/ma/cache
 
