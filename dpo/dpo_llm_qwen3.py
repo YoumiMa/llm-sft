@@ -134,7 +134,6 @@ def main():
         trust_remote_code=True,
     )
 
-    tokenizer.pad_token = "<|finetune_right_pad_id|>"
     print(tokenizer.special_tokens_map, "ids:", tokenizer.all_special_ids)
     logger.info("Loading data")
 
@@ -159,7 +158,7 @@ def main():
         trust_remote_code=True,
     )
     
-    model.config.eos_token_id = [128001, 128008, 128009]
+    model.config.eos_token_id = 151645
 
     logger.info("Setting up trainer")
     trainer = DPOTrainer(
@@ -169,27 +168,33 @@ def main():
     processing_class=tokenizer,  # パラメータ保存時にトークナイザも一緒に保存するために指定
 )
     ##------------------debugging------------------
-    # train_dataloader = trainer.get_train_dataloader()
-    # first_batch = next(iter(train_dataloader))
+    train_dataloader = trainer.get_train_dataloader()
+    first_batch = next(iter(train_dataloader))
 
-    # print("\n" + "=" * 80)
-    # print("First training batch:")
-    # print(f"Batch keys: {first_batch.keys()}")
+    print("\n" + "=" * 80)
+    print("First training batch:")
+    print(f"Batch keys: {first_batch.keys()}")
     
-    # if 'input_ids' in first_batch:
-    #     sample_ids = first_batch['input_ids'][0][:100]  # 最初の100トークン
-    #     print(f"\nSample input_ids: {sample_ids}")
-    #     print(f"\nDecoded sample: {tokenizer.decode(sample_ids)}")
+    if 'input_ids' in first_batch:
+        sample_ids = first_batch['input_ids'][0][:100]  # 最初の100トークン
+        print(f"\nSample input_ids: {sample_ids}")
+        print(f"\nDecoded sample: {tokenizer.decode(sample_ids)}")
     
-    # print("=" * 80 + "\n")
+    print("=" * 80 + "\n")
 
     ##------------------debugging------------------
 
     logger.info("Training")
     trainer.train(resume_from_checkpoint = dpo_config.resume_from_checkpoint)
     
-    #model.config.eos_token_id = [128001, 128008, 128009]
-    model.generation_config.eos_token_id = [128001, 128008, 128009]
+    model.config.eos_token_id = 151645
+    model.generation_config.eos_token_id = 151645
+    model.generation_config.pad_token_id = 151643
+    model.generation_config.do_sample = True
+    model.generation_config.repetition_penalty = 1.05
+    model.generation_config.temperature = 0.7
+    model.generation_config.top_p = 0.8
+    model.generation_config.top_k = 20
     
     logger.info("Saving model")
     trainer.save_model()
