@@ -134,7 +134,7 @@ def main():
         trust_remote_code=True,
     )
 
-    tokenizer.pad_token = "<|finetune_right_pad_id|>"
+    tokenizer.pad_token = "<|end_of_text|>"
     print(tokenizer.special_tokens_map, "ids:", tokenizer.all_special_ids)
     logger.info("Loading data")
 
