@@ -159,7 +159,9 @@ def main():
     )
     
     model.config.eos_token_id = 151645
-
+    
+    dpo_config.dataset_num_proc = dpo_training_args.preprocessing_num_workers
+    
     logger.info("Setting up trainer")
     trainer = DPOTrainer(
     model,
@@ -168,19 +170,19 @@ def main():
     processing_class=tokenizer,  # パラメータ保存時にトークナイザも一緒に保存するために指定
 )
     ##------------------debugging------------------
-    train_dataloader = trainer.get_train_dataloader()
-    first_batch = next(iter(train_dataloader))
+    # train_dataloader = trainer.get_train_dataloader()
+    # first_batch = next(iter(train_dataloader))
 
-    print("\n" + "=" * 80)
-    print("First training batch:")
-    print(f"Batch keys: {first_batch.keys()}")
+    # print("\n" + "=" * 80)
+    # print("First training batch:")
+    # print(f"Batch keys: {first_batch.keys()}")
     
-    if 'input_ids' in first_batch:
-        sample_ids = first_batch['input_ids'][0][:100]  # 最初の100トークン
-        print(f"\nSample input_ids: {sample_ids}")
-        print(f"\nDecoded sample: {tokenizer.decode(sample_ids)}")
+    # if 'input_ids' in first_batch:
+    #     sample_ids = first_batch['input_ids'][0][:100]  # 最初の100トークン
+    #     print(f"\nSample input_ids: {sample_ids}")
+    #     print(f"\nDecoded sample: {tokenizer.decode(sample_ids)}")
     
-    print("=" * 80 + "\n")
+    # print("=" * 80 + "\n")
 
     ##------------------debugging------------------
 

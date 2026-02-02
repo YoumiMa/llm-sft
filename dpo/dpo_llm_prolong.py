@@ -134,7 +134,6 @@ def main():
         trust_remote_code=True,
     )
 
-    tokenizer.pad_token = "<|end_of_text|>"
     print(tokenizer.special_tokens_map, "ids:", tokenizer.all_special_ids)
     logger.info("Loading data")
 
@@ -157,6 +156,9 @@ def main():
         dpo_training_args.model_name_or_path,
         use_cache=False,
         trust_remote_code=True,
+        mlp_bias=False,
+        rope_theta=1000000,  # Direct parameter
+        max_position_embeddings=131072
     )
     
     logger.info("Setting up trainer")
@@ -186,6 +188,8 @@ def main():
     logger.info("Training")
     trainer.train(resume_from_checkpoint = dpo_config.resume_from_checkpoint)
     
+    
+    model.config.use_cache = True
     
     logger.info("Saving model")
     trainer.save_model()
