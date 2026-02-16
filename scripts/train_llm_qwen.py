@@ -19,6 +19,15 @@ from transformers import (
 )
 
 
+# Force weights_only to False regardless of what the caller (Trainer) asks for
+#original_torch_load = torch.load
+#def patched_torch_load(*args, **kwargs):
+#    if "weights_only" in kwargs:
+#        kwargs["weights_only"] = False
+#    return original_torch_load(*args, **kwargs)
+#
+#torch.load = patched_torch_load
+
 logger = logging.getLogger(__name__)
 transformers.logging.set_verbosity_info()
 
@@ -196,9 +205,9 @@ def main():
     #     print(tokenizer.decode(input_ids[seg]))
     #     print(input_ids[seg])
     #     print()
-    # # ------------debugging------------
-    # 
-    # 
+    # # # ------------debugging------------
+    
+    
     logger.info(f"Loading model from {sft_training_args.model_name_or_path}")
     
     logger.debug(
@@ -225,13 +234,11 @@ def main():
     logger.info("Training")
     trainer.train(resume_from_checkpoint = training_args.resume_from_checkpoint)
     
-    model.config.eos_token_id = 151645
-    model.generation_config.eos_token_id = 151645
+    model.generation_config.eos_token_id = [151645, 151643]
     model.generation_config.pad_token_id = 151643
     model.generation_config.do_sample = True
-    model.generation_config.repetition_penalty = 1.05
-    model.generation_config.temperature = 0.7
-    model.generation_config.top_p = 0.8
+    model.generation_config.temperature = 0.6
+    model.generation_config.top_p = 0.95
     model.generation_config.top_k = 20
     
     logger.info("Saving model")
