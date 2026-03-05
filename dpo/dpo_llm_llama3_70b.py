@@ -17,6 +17,13 @@ from transformers import (
     BitsAndBytesConfig,
 )
 
+original_torch_load = torch.load
+def patched_torch_load(*args, **kwargs):
+    kwargs["weights_only"] = False  # 常に上書き
+    return original_torch_load(*args, **kwargs)
+
+torch.load = patched_torch_load
+
 
 logger = logging.getLogger(__name__)
 transformers.logging.set_verbosity_info()
@@ -62,6 +69,7 @@ class DPOTrainingArguments:
     peft_lora_r: int = 8
     peft_lora_alpha: int = 32
     peft_lora_dropout: float = 0.05
+    restore_callback_states_from_checkpoint=True
     
     def __post_init__(self):
         if self.load_in_8bit and self.loadi_in_4bit:
@@ -118,6 +126,7 @@ def main():
     #print(parser)
     dpo_config, dpo_training_args = parser.parse_args_into_dataclasses()    
 
+    dpo_config.sync_ref_model = False
     print(dpo_config)
     set_seed(dpo_config.seed)
     logger.info(f"Set seed: {dpo_config.seed}")
@@ -155,6 +164,16 @@ def main():
     )
     model = AutoModelForCausalLM.from_pretrained(
         dpo_training_args.model_name_or_path,
+        attn_implementation="flash_attention_2",
+        dtype=torch.bfloat16,
+        use_cache=True,
+        trust_remote_code=True,
+    )
+    
+    ref_model = AutoModelForCausalLM.from_pretrained(
+        dpo_training_args.model_name_or_path,
+        attn_implementation="flash_attention_2",
+        dtype=torch.bfloat16,
         use_cache=True,
         trust_remote_code=True,
     )
@@ -162,7 +181,7 @@ def main():
     logger.info("Setting up trainer")
     trainer = DPOTrainer(
     model,
-    ref_model=None,
+    ref_model=ref_model,
     train_dataset=dataset,  # トークンID化されたデータセット
     args=dpo_config,  # 訓練の設定
     processing_class=tokenizer,  # パラメータ保存時にトークナイザも一緒に保存するために指定
