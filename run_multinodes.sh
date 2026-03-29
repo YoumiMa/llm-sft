@@ -1,7 +1,7 @@
 #! /bin/sh
 #$ -cwd
-#$ -l node_f=16
-#$ -l h_rt=23:50:00
+#$ -l node_f=2
+#$ -l h_rt=01:20:00
 
 module load openmpi/5.0.7-gcc
 

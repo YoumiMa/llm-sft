@@ -41,9 +41,8 @@ accelerate launch --config_file configs/my_accelerate_config_zero3.16nodes.yaml 
          dpo/dpo_llm_llama3_70b.py --output_dir /gs/bs/tga-ma-act-x/ckpts/${NAME}_${SEED} \
 --run_name $NAME \
 --data_files ${DATA[*]} \
---model_name_or_path /gs/bs/tga-ma-act-x/ckpts/${NAME}_${SEED}/checkpoint-500 \
---tokenizer_name_or_path /gs/bs/tga-ma-act-x/ckpts/${NAME}_${SEED}/checkpoint-500 \
---resume_from_checkpoint /gs/bs/tga-ma-act-x/ckpts/${NAME}_${SEED}/checkpoint-500 \
+--model_name_or_path meta-llama/Llama-3.1-70B-Instruct \
+--tokenizer_name_or_path meta-llama/Llama-3.1-70B-Instruct \
 --bf16 true \
 --num_train_epochs 2 \
 --per_device_train_batch 1 \
@@ -57,7 +56,7 @@ accelerate launch --config_file configs/my_accelerate_config_zero3.16nodes.yaml 
 --weight_decay ${WD} \
 --warmup_ratio 0.1 \
 --logging_steps 10 \
---save_steps 400 \
+--save_steps 300 \
 --seed ${SEED} \
 --report_to wandb \
 --project dpo
