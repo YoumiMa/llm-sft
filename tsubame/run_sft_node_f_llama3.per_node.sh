@@ -9,7 +9,7 @@ export WANDB_DATA_DIR=/gs/fs/tga-okazaki/ma/jalm-evaluation-private/wandb
 #export NCCL_P2P_DISABLE=1
 export NCCL_DEBUG=INFO
 
-#module load cuda/12.1.0
+module load cuda/12.8.0
 eval "$(/apps/t4/rhel9/free/miniconda/24.1.2/bin/conda shell.bash hook)"
 conda activate llm-jp-sft
 
@@ -22,13 +22,26 @@ SEED=$1; shift
 DATA="${*}"
 NAME=llama-3.1-${NAME}_LR_${LR}_MINLR_${MINLR}_WD_${WD}
 
+# machine_rankを保存してからunset
+MACHINE_RANK=${OMPI_COMM_WORLD_RANK}
+
+# OpenMPI環境変数をクリア（DeepSpeedとの衝突を防ぐ）
+unset OMPI_COMM_WORLD_LOCAL_RANK
+unset OMPI_COMM_WORLD_RANK
+unset OMPI_COMM_WORLD_SIZE
+
+echo "Rank: ${MACHINE_RANK}"
+echo "task name: ${NAME}"
+echo "Main Process: ${MAIN_PROCESS_IP}"
+echo "data: ${DATA}"
+
 accelerate launch --config_file configs/my_accelerate_config_zero1.2nodes.yaml \
         --main_process_ip $MAIN_PROCESS_IP \
          --main_process_port 29500 \
-         --machine_rank $PMI_RANK \
+         --machine_rank $MACHINE_RANK \
          scripts/train_llm_swallow.py --output_dir /gs/bs/tga-okazaki/ma/ckpts/${NAME}_${SEED} \
          --run_name $NAME \
-         --data_files $DATA \
+         --data_files ${DATA[*]} \
          --model_name_or_path meta-llama/Llama-3.1-8B \
          --tokenizer_name_or_path meta-llama/Llama-3.1-8B-Instruct \
          --bf16 \
