@@ -69,7 +69,7 @@ where an example of a distributed training script is [tsubame/run_sft_node_f_lla
 - Make sure to `chmod 777 /path/to/distributed/training/script`, otherwise the script could not be executed by mpirun.
 - Please modify model/tokenizer path, per_device_train_batch, and gradient_accumulation_steps accordingly. Global batch size = per_device_train_batch * gradient_accumulation_steps * number_of_devices(gpus).
 - Please create the config file of DeepSpeed accordingly. Here the [example](configs/my_accelerate_config_zero1_2nodes.yaml) is for using zero1 on 2 TSUBAME nodes (H100 x 4 x 2).
-  - `num_machines` correspond to the number of nodes and `num_processes` correspond to the number of GPUs on each node.
+  - `num_machines` represents the number of nodes and `num_processes` represents the number of GPUs on each node.
 
 ### ABCI 3.0
 Bash scripts for submitting batch jobs for SFT on ABCI 3.0 are stored in `abci/`.
