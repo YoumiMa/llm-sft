@@ -19,7 +19,7 @@ WD=0.1
 MAIN_PROCESS_IP=$1; shift
 NAME=$1; shift
 SEED=$1; shift
-DATA="${*}"
+DATA=("$@")
 NAME=llama-3.1-${NAME}_LR_${LR}_MINLR_${MINLR}_WD_${WD}
 
 # machine_rankを保存してからunset
