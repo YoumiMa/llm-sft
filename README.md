@@ -63,10 +63,13 @@ qsub -g ${GROUP_ID} tsubame/run_sft_node_f.sh ${WANDB_JOB_NAME} ${SEED} ${TRAINI
 ```
 When submitting the batch job for multiple nodes, the example usage is to run below:
 ```
-qsub -g ${GROUP_ID} tsubame/run_multinodes.sh ${DISTRIBUTED_TRAINING_SCRIPT} ${WANDB_JOB_NAME} ${SEED} ${TRAINING_DATA_PATH_1} ${TRAINING_DATA_PATH_2} ...
+qsub -g ${GROUP_ID} tsubame/run_multinodes.sh /absolute/path/to/distributed/training/script ${WANDB_JOB_NAME} ${SEED} ${TRAINING_DATA_PATH_1} ${TRAINING_DATA_PATH_2} ...
 ```
-where an example of `${DISTRIBUTED_TRAINING_SCRIPT}` is [tsubame/run_sft_node_f_llama3.per_node.sh](tsubame/run_sft_node_f_llama3.per_node.sh).
-- make sure to `chmod 777 ${DISTRIBUTED_TRAINING_SCRIPT}`, otherwise the script could not be executed by mpirun.
+where an example of a distributed training script is [tsubame/run_sft_node_f_llama3.per_node.sh](tsubame/run_sft_node_f_llama3.per_node.sh).
+- Make sure to `chmod 777 ${DISTRIBUTED_TRAINING_SCRIPT}`, otherwise the script could not be executed by mpirun.
+- Please modify model/tokenizer path, per_device_train_batch, and gradient_accumulation_steps accordingly. Global batch size = per_device_train_batch * gradient_accumulation_steps * number_of_devices(gpus).
+- Please create the config file of DeepSpeed accordingly. Here the [example](configs/my_accelerate_config_zero1_2nodes.yaml) is for using zero1 on 2 TSUBAME nodes (H100 x 4 x 2).
+  - `num_machines` correspond to the number of nodes and `num_processes` correspond to the number of GPUs on each node.
 
 ### ABCI 3.0
 Bash scripts for submitting batch jobs for SFT on ABCI 3.0 are stored in `abci/`.
