@@ -3,7 +3,6 @@ debug: false
 distributed_type: DEEPSPEED
 deepspeed_config:
   zero_stage: 2
-  zero3_init_flag: true
 downcast_bf16: 'no'
 gpu_ids: all
 machine_rank: 0
