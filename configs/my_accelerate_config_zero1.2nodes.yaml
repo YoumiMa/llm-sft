@@ -3,6 +3,7 @@ debug: false
 distributed_type: DEEPSPEED
 deepspeed_config:
   zero_stage: 1
+  deepspeed_multinode_launcher: standard
 downcast_bf16: 'no'
 gpu_ids: all
 main_training_function: main
