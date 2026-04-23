@@ -4,7 +4,6 @@ distributed_type: DEEPSPEED
 deepspeed_config:
   deepspeed_multinode_launcher: standard
   zero_stage: 2
-  zero3_init_flag: true
 downcast_bf16: 'no'
 gpu_ids: all
 main_training_function: main
