@@ -19,7 +19,7 @@ DATA_DIR="$@"
 echo $DATA_DIR
 APP="${TRAIN_SHELL} ${MASTER} ${TASK_NAME} ${SEED} ${DATA_DIR}"
 #APP="${TRAIN_SHELL} ${MASTER} ${TASK_NAME}"
-MPIOPTS="-npernode 1 -n ${NHOSTS}"
+MPIOPTS="-npernode 1 -n ${NHOSTS} --bind-to none"
 
 #echo $APP
 mpirun $MPIOPTS bash $APP
