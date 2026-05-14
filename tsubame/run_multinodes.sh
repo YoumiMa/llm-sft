@@ -1,7 +1,7 @@
 #! /bin/sh
 #$ -cwd
 #$ -l node_f=2
-#$ -l h_rt=00:20:00
+#$ -l h_rt=24:00:00
 
 module load openmpi/5.0.7-gcc
 
@@ -21,7 +21,7 @@ conda activate llm-jp-sft
 
 echo $DATA_DIR
 APP="${TRAIN_SHELL} ${MASTER} ${TASK_NAME} ${SEED} ${DATA_DIR}"
-MPIOPTS="-npernode 1 -n ${NHOSTS}"
+MPIOPTS="-npernode 1 -n ${NHOSTS} --bind-to none"
 
 #echo $APP
 mpirun $MPIOPTS bash $APP

@@ -11,6 +11,7 @@ This repository contains the code for supervised fine-tuning of LLM-jp models.
 - [deepspeed](https://huggingface.co/docs/transformers/en/main_classes/deepspeed)==0.15.2
 - [accelerate](https://huggingface.co/docs/accelerate/index)==1.0.1
 - [peft](https://huggingface.co/docs/peft/index)>=0.5.0
+- [liger-kernel](https://huggingface.co/docs/trl/liger_kernel_integration)==0.6.5 (should meet with transformers version)
 
 ## Installation
 

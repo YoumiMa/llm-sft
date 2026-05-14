@@ -65,7 +65,7 @@ class SFTTrainingArguments:
     peft_lora_dropout: float = 0.05
     
     def __post_init__(self):
-        if self.load_in_8bit and self.loadi_in_4bit:
+        if self.load_in_8bit and self.load_in_4bit:
             raise ValueError("load_in_8bit and load_in_4bit are mutually exclusive")
         if self.peft_target_model and self.peft_target_modules is None:
             if self.peft_target_model == "llm-jp":
@@ -213,7 +213,7 @@ def main():
     logger.debug(
         f"AutoModelForCausalLM.from_pretrained({sft_training_args.model_name_or_path}, trust_remote_code=True)"
     )
-    
+
     model = AutoModelForCausalLM.from_pretrained(
         sft_training_args.model_name_or_path,
         use_cache=False,
