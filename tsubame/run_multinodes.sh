@@ -16,9 +16,6 @@ TASK_NAME=$1; shift
 SEED=$1; shift
 DATA_DIR="$@"
 
-eval "$(/apps/t4/rhel9/free/miniconda/24.1.2/bin/conda shell.bash hook)"
-conda activate llm-jp-sft
-
 echo $DATA_DIR
 APP="${TRAIN_SHELL} ${MASTER} ${TASK_NAME} ${SEED} ${DATA_DIR}"
 MPIOPTS="-npernode 1 -n ${NHOSTS} --bind-to none"
