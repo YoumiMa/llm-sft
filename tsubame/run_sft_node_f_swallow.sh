@@ -1,13 +1,13 @@
 #! /bin/sh
 #$ -cwd
 #$ -l node_f=1
-#$ -l h_rt=00:10:00
+#$ -l h_rt=0:30:00
 
-HUGGINGFACE_CACHE=/gs/bs/tga-okazaki/ma/cache
+HUGGINGFACE_CACHE=/gs/bs/tga-okazaki/y-katayama/.cache
 
 export HUGGINGFACE_HUB_CACHE=$HUGGINGFACE_CACHE
 export HF_HOME=$HUGGINGFACE_CACHE
-export WANDB_DATA_DIR=/gs/fs/tga-okazaki/ma/jalm-evaluation-private/wandb
+export WANDB_DATA_DIR=/gs/fs/tga-okazaki/y-katayama/.wandb
 
 #export NCCL_IB_DISABLE=1
 #export NCCL_SOCKET_IFNAME=br01 # for me it is 'br0' interface, you should use yours :)
@@ -24,13 +24,18 @@ WD=0.1
 NAME=$1; shift
 SEED=$1; shift
 DATA=("$@")
-NAME=llama-3.1-swallow-${NAME}_LR_${LR}_MINLR_${MINLR}_WD_${WD}
+NAME=Qwen3-Swallow-8B-CPT-${NAME}_LR_${LR}_MINLR_${MINLR}_WD_${WD}
 
-accelerate launch --config_file configs/my_accelerate_config_zero1.yaml scripts/train_llm_swallow.py --output_dir /gs/bs/tga-okazaki/ma/ckpts/${NAME}_${SEED} \
+cd /gs/fs/tga-okazaki/y-katayama/llm-sft
+
+# メモリ効率対策
+export PYTORCH_ALLOC_CONF=expandable_segments:True,garbage_collection_threshold:0.85
+
+accelerate launch --config_file configs/my_accelerate_config_zero1.yaml scripts/train_llm_qwen.py --output_dir /gs/bs/tga-okazaki/y-katayama/ckpts/${NAME}_${SEED} \
 --run_name $NAME \
 --data_files ${DATA[*]} \
---model_name_or_path tokyotech-llm/Llama-3.1-Swallow-8B-v0.1 \
---tokenizer_name_or_path tokyotech-llm/Llama-3.1-Swallow-8B-Instruct-v0.1 \
+--model_name_or_path tokyotech-llm/Qwen3-Swallow-8B-CPT-v0.2 \
+--tokenizer_name_or_path tokyotech-llm/Qwen3-Swallow-8B-CPT-v0.2 \
 --bf16 \
 --num_train_epochs 2 \
 --per_device_train_batch 2 \
@@ -46,3 +51,4 @@ accelerate launch --config_file configs/my_accelerate_config_zero1.yaml scripts/
 --logging_steps 10 \
 --save_steps 500 \
 --seed ${SEED} \
+--use_liger_kernel \

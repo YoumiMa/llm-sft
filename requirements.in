@@ -10,3 +10,4 @@ wandb
 deepspeed
 bitsandbytes
 scipy
+liger-kernel
