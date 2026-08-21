@@ -227,7 +227,7 @@ def main():
     train_dataset=tokenized_dataset,  # トークンID化されたデータセット
     data_collator=collator,  # ラベルの加工及びミニバッチ構築処理を行うモジュール
     args=training_args,  # 訓練の設定
-    tokenizer=tokenizer,  # パラメータ保存時にトークナイザも一緒に保存するために指定
+    processing_class=tokenizer,  # パラメータ保存時にトークナイザも一緒に保存するために指定
     )
     
 
